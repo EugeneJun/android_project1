@@ -18,6 +18,31 @@ module.exports={
         </html>
         `
     },
+    roomList:function(list){
+        var html = `
+        <div id="Rbutton"><button class="btn btn-primary" style="margin-left:20px;" onclick="openRoomMaker()">방 만들기</button></div>
+        <script>
+            function openRoomMaker() {
+                document.getElementById("Rbutton").innerHTML = \`
+                    <form action="/room_making_process" method="post">
+                        <div class="input-group mb-3" style="margin-left:20px; width:350px">
+                            <input type="text" name="title" placeholder="방 이름" class="form-control" aria-describedby="basic-addon2">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="submit">방 만들기</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>\`;
+            }
+        </script>
+        <div class="list-group">`;
+
+        for(var i = 0; i < list.length; i++){
+            html += `<a href="/chatroom?id=${i}" class="list-group-item list-group-item-action">${list[i].title}</a>`;
+        }
+        html += '</div>';
+        return html;
+    },
     login:function(login = false){
         var html = `<div>`;
         if(login){

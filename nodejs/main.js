@@ -1,13 +1,16 @@
 const express = require('express'),
 template = require('./lib/javascript/template.js'),
+Room = require('./lib/javascript/roomController.js'),
 http = require('http'),
 app = express(),
 server = http.createServer(app),
 url = require('url'),
 mongoose = require('mongoose'),
-io = require('socket.io').listen(server),
 session = require('express-session'),
+MongoStore = require('connect-mongo')(session),
+io = require('socket.io').listen(server),
 fs = require('fs'),
+alert = require('alert-node'),
 bodyParser = require('body-parser'),
 cookieParser = require('cookie-parser');
 
@@ -15,15 +18,19 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded());
 
-mongoose.connect('mongodb://localhost/login_system')
+mongoose.connect('mongodb://localhost/login_system', {
+            useNewUrlParser: true,
+            useCreateIndex: true,
+            useUnifiedTopology: true,
+            useFindAndModify: false
+        })
     .then(() => 'You are now connected to Mongo!')
     .catch(err => console.error('Something went wrong', err))
 
 app.use(session({
     secret: 'my-secret',
     resave: false,
-    saveUninitialized: true,
-    store:require('mongoose-session')(mongoose)
+    saveUninitialized: true
 }));
 
 const userSchema = new mongoose.Schema({
@@ -56,8 +63,7 @@ async function getUsers(id, password) {
 }
 
 app.get('/',function(req,res){
-    console.log(req.session.user);
-    var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, undefined);
+    var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, template.roomList(Room.instances));
     res.send(html);
 });
 
@@ -72,10 +78,21 @@ app.get('/page/:pageID', function(req, res){
     });
 })
 
-app.post('/auth/register_process', function(req, res){
-    var userId = req.body.ID;
-    var userPassword = req.body.password;
-    var is_login;
+app.post('/room_making_process', function(req, res){
+    console.log(req.body.title);
+    if(req.session.user){
+        title = req.body.title;
+        userId = req.session.user.id;
+        room = new Room({title, userId});
+        res.redirect('/');
+    }
+    else{
+        alert("로그인 후 이용해주세요!");
+    }
+})
+
+app.get('/chatroom', function(req, res){
+    console.log(req.query.id);
 })
 
 app.post('/auth/login_process', function(req, res){
@@ -93,11 +110,13 @@ app.post('/auth/login_process', function(req, res){
             };
             console.log(req.session.user);
             var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, undefined);
+            res.redirect('/');
             res.send(html);
         }
         else{
             console.log("denied");
             var html = template.HTML_Main(undefined, template.login(false), undefined, `<p style="text-align:center; margin-top:20px;">로그인 실패</p>`);
+            res.redirect('/');
             res.send(html);
         }
     });
@@ -122,6 +141,7 @@ app.post('/auth/register_process', function(req, res){
         console.log("회원가입 완료");
     });
     var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, `<p style="text-align:center; margin-top:20px;">회원가입 성공! 로그인 해주세요~</p>`);
+    res.redirect('/');
     res.send(html);
 });
 
@@ -143,9 +163,8 @@ io.on('connection', (socket) => {
         // send the message to the client side
         socket.emit('message', message )
     });
-
     socket.on('disconnect', function() {
-        console.log( 'user has left ')
+        console.log('user has left ')
         socket.broadcast.emit( "userdisconnect" ,' user has left')
     });
 });
