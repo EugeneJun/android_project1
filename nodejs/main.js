@@ -1,6 +1,6 @@
 const express = require('express'),
 template = require('./lib/javascript/template.js'),
-Room = require('./lib/javascript/roomController.js'),
+{Room, Message,} = require('./lib/javascript/roomController.js'),
 http = require('http'),
 app = express(),
 server = http.createServer(app),
@@ -81,9 +81,9 @@ app.get('/page/:pageID', function(req, res){
 app.post('/room_making_process', function(req, res){
     console.log(req.body.title);
     if(req.session.user){
-        title = req.body.title;
-        userId = req.session.user.id;
-        room = new Room({title, userId});
+        var title = req.body.title;
+        var userId = req.session.user.id;
+        var room = new Room(title, userId);
         res.redirect('/');
     }
     else{
@@ -92,7 +92,22 @@ app.post('/room_making_process', function(req, res){
 })
 
 app.get('/chatroom', function(req, res){
-    console.log(req.query.id);
+    var roomId = req.query.id;
+    var chat = template.chatBody(Room.instances[roomId]);
+    var userId = req.session.user.id;
+    Room.instances[roomId].users.push(userId);
+    var html = template.HTML_Main(undefined, template.login(req.session.user), Room.instances[roomId].title + "채팅방", chat);
+    res.send(html);
+})
+
+app.post('/send_message', function(req, res){
+    var text = req.body.message;
+    var roomId = req.query.id;
+    var userId = req.session.user.id;
+    var sendTime = Date.now;
+    var message = new Message(text, userId, sendTime);
+    Room.instances[roomId].messages.push(message);
+    res.redirect('/chatroom?id=' + roomId);
 })
 
 app.post('/auth/login_process', function(req, res){
@@ -101,23 +116,19 @@ app.post('/auth/login_process', function(req, res){
     var is_user;
     getUsers(userId, userPassword).then(function(data){
         is_user = data;
-        console.log(is_user);
         if(is_user){
             req.session.user = {
                 id: userId,
                 pw: userPassword,
                 authorized: true
             };
-            console.log(req.session.user);
-            var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, undefined);
+            alert("반갑습니다! " + req.session.user.id + "님");
             res.redirect('/');
-            res.send(html);
         }
         else{
             console.log("denied");
-            var html = template.HTML_Main(undefined, template.login(false), undefined, `<p style="text-align:center; margin-top:20px;">로그인 실패</p>`);
+            alert("로그인 실패");
             res.redirect('/');
-            res.send(html);
         }
     });
 });
@@ -140,9 +151,8 @@ app.post('/auth/register_process', function(req, res){
     registerId(userId, userPassword).then(function(){
         console.log("회원가입 완료");
     });
-    var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, `<p style="text-align:center; margin-top:20px;">회원가입 성공! 로그인 해주세요~</p>`);
+    alert("회원가입 성공! 로그인 해주세요~");
     res.redirect('/');
-    res.send(html);
 });
 
 server.listen(3000,()=>{
