@@ -92,15 +92,23 @@ app.post('/room_making_process', function(req, res){
 })
 
 app.get('/chatroom', function(req, res){
-    var roomId = req.query.id;
-    var chat = template.chatBody(Room.instances[roomId]);
-    var userId = req.session.user.id;
-    Room.instances[roomId].users.push(userId);
-    var html = template.HTML_Main(undefined, template.login(req.session.user), Room.instances[roomId].title + "채팅방", chat);
-    res.send(html);
+    if(req.session.user){
+        var roomId = req.query.id;
+        var userId = req.session.user.id;
+        console.log(roomId);
+        var chat = template.chatBody(Room.instances[roomId], userId);
+        Room.instances[roomId].users.push(userId);
+        var html = template.HTML_Main(undefined, template.login(req.session.user), Room.instances[roomId].title + "채팅방", chat);
+        res.send(html);
+    }
+    else{
+        alert("로그인 후 이용해주세요!");
+        res.redirect('/');
+    }
 })
 
 app.post('/send_message', function(req, res){
+    console.log("send_message");
     var text = req.body.message;
     var roomId = req.query.id;
     var userId = req.session.user.id;
@@ -165,13 +173,13 @@ io.on('connection', (socket) => {
         console.log(userNickname +" : has joined the chat "  )
         socket.broadcast.emit('userjoinedthechat',userNickname +" : has joined the chat ")
     });
-    socket.on('messagedetection', (senderNickname,messageContent) => {
+    socket.on('messagedetection', function(data){
         //log the message in console
-        console.log(senderNickname+" :" +messageContent)
-        //create a message object
-        let message = {"message":messageContent, "senderNickname":senderNickname}
-        // send the message to the client side
-        socket.emit('message', message )
+        console.log(data.msg + " is sended")
+        io.emit('chat message', data.msg);
+        var sendTime = Date.now;
+        var message = new Message(data.msg, data.userId, sendTime);
+        Room.instances[data.roomId].messages.push(message);
     });
     socket.on('disconnect', function() {
         console.log('user has left ')

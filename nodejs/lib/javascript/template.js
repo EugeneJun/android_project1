@@ -9,6 +9,11 @@ module.exports={
                 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
             </head>
             <body>
+                <script src="/socket.io/socket.io.js"></script>
+                <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+                <script>
+                var socket = io();
+                </script>
                 <h1 style="text-align:center; margin-top:20px; margin-bottom:15px;"><a href="/" style="text-decoration:none;">${head}</a></h1>
                 <div class="header">
                     <div id="login" class="pull-right" style="text-align:right; margin-bottom:15px; margin-right:60px">${member}</div>
@@ -43,22 +48,32 @@ module.exports={
         html += '</div>';
         return html;
     },
-    chatBody:function(room){
-        var html = `<div><ul class="list-group">`;
+    chatBody:function(room, userId){
+        var html = `<div><ul id="messages" class="list-group">`;
 
         for(var i = 0; i < room.messages.length; i++){
             html += `<li class="list-group-item">${room.messages[i].message}</li>`;
         }
         html += `</ul>
-            <form action="/send_message?id=${room.id}" method="post">
-                <div class="input-group mb-3" style="margin-left:20px; width:350px">
-                    <input type="text" name="message" placeholder="메시지를 입력하세요." class="form-control" aria-describedby="basic-addon2">
-                    <div class="input-group-append">
-                        <button class="btn btn-outline-secondary" type="submit"> 전송 </button>
-                    </div>
-                </div>
-            </form>
-        </div>`;
+                    <form id="msg_send">
+                        <div class="input-group mb-3" style="margin-left:20px; width:350px">
+                            <input id="msg" type="text" placeholder="메시지를 입력하세요." class="form-control" aria-describedby="basic-addon2">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary"> 전송 </button>
+                            </div>
+                        </div>
+                    </form>
+                    <script>
+                    $("#msg_send").submit(function(event){
+                        event.preventDefault();
+                        socket.emit('messagedetection', {msg: $("#msg").val(), userId: "${userId}", roomId: "${room.id}"});
+                        $("#msg").val('');
+                    });
+                    socket.on('chat message', function(msg){
+                        $("#messages").append($('<li class="list-group-item">').text(msg));
+                    });
+                    </script>
+                </div>`;
         return html;
     },
     login:function(login = false){
