@@ -10,9 +10,9 @@ class Room{
 Room.instances = [];
 
 class Message{
-    constructor(message, user, date){
+    constructor(message, userId, date){
         this.message = message;
-        this.user = user;
+        this.userId = userId;
         this.date = date;
     }
 }

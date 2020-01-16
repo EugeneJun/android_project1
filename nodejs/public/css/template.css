@@ -1,0 +1,8 @@
+#chat {
+    float: left;
+    width: 75%;
+}
+#userBox {
+    float: right;
+    width: 20%;
+}

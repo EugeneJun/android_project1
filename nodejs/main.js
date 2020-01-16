@@ -17,6 +17,7 @@ cookieParser = require('cookie-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.urlencoded());
+app.use(express.static(__dirname + '/public'));
 
 mongoose.connect('mongodb://localhost/login_system', {
             useNewUrlParser: true,
@@ -68,13 +69,11 @@ app.get('/',function(req,res){
 });
 
 app.get('/page/:pageID', function(req, res){
-    fs.readdir('./lib/contents', function(err, files){
-        console.log(req.params.pageID);
-        fs.readFile(`./lib/pages/${req.params.pageID}`, function(err, data){
-            var body = data;
-            var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, data);
-            res.send(html);
-        });
+    console.log(req.params.pageID);
+    fs.readFile(`./lib/pages/${req.params.pageID}`, function(err, data){
+        var body = data;
+        var html = template.HTML_Main(undefined, template.login(req.session.user), undefined, data);
+        res.send(html);
     });
 })
 
@@ -93,11 +92,21 @@ app.post('/room_making_process', function(req, res){
 
 app.get('/chatroom', function(req, res){
     if(req.session.user){
+        console.log(roomId);
         var roomId = req.query.id;
         var userId = req.session.user.id;
-        console.log(roomId);
+        var flag = 0;
+        for(var i = 0; i < Room.instances[roomId].users.length; i++){
+            if(Room.instances[roomId].users[i] == userId){
+                flag = 1;
+                break;
+            }
+        }
+        if(flag == 0){
+            Room.instances[roomId].users.push(userId);
+            io.emit('enter_chatroom', {roomId: roomId, userId: userId});
+        }
         var chat = template.chatBody(Room.instances[roomId], userId);
-        Room.instances[roomId].users.push(userId);
         var html = template.HTML_Main(undefined, template.login(req.session.user), Room.instances[roomId].title + "채팅방", chat);
         res.send(html);
     }
@@ -176,10 +185,32 @@ io.on('connection', (socket) => {
     socket.on('messagedetection', function(data){
         //log the message in console
         console.log(data.msg + " is sended")
-        io.emit('chat message', data.msg);
-        var sendTime = Date.now;
+        var timeNow = new Date();
+        console.log(timeNow.getHours());
+        console.log(timeNow.getMinutes());
+        if(timeNow.getHours() < 12){
+            var sendTime = "오전" + timeNow.getHours() + "시 " + timeNow.getMinutes() +"분";
+        }
+        else if(timeNow.getHours() == 12){
+            var sendTime = "오후" + timeNow.getHours() + "시 " + timeNow.getMinutes() +"분";
+        }
+        else {
+            var sendTime = "오후" + (timeNow.getHours() - 12) + "시 " + timeNow.getMinutes() +"분";
+        }
+        io.emit('chat message', {msg: data.msg, userId: data.userId, sendTime: sendTime});
         var message = new Message(data.msg, data.userId, sendTime);
         Room.instances[data.roomId].messages.push(message);
+    });
+    socket.on('leave_chat', function(data){
+        var thisRoom = Room.instances[data.roomId];
+        io.emit('leave_chatroom', {roomId: data.roomId, userId: data.userId});
+        for(var i = 0; i < thisRoom.users.length; i++){
+            if(thisRoom.users[i] == data.userId){
+                thisRoom.users.splice(i, 1);
+                break;
+            }
+        }
+        console.log(data);
     });
     socket.on('disconnect', function() {
         console.log('user has left ')

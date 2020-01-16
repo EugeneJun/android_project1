@@ -7,6 +7,7 @@ module.exports={
                 <meta charset="utf-8">
                 <title>${title}</title>
                 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+                <link rel="stylesheet" href="/css/template.css">
             </head>
             <body>
                 <script src="/socket.io/socket.io.js"></script>
@@ -49,31 +50,54 @@ module.exports={
         return html;
     },
     chatBody:function(room, userId){
-        var html = `<div><ul id="messages" class="list-group">`;
+        var html = `<div id="chat"><ul id="messages" class="list-group">`;
 
         for(var i = 0; i < room.messages.length; i++){
-            html += `<li class="list-group-item">${room.messages[i].message}</li>`;
+            html += `<li class="list-group-item">${room.messages[i].userId}: ${room.messages[i].message}<div style="text-align:right; float:right;">${room.messages[i].date}</div></li>`;
         }
         html += `</ul>
                     <form id="msg_send">
-                        <div class="input-group mb-3" style="margin-left:20px; width:350px">
+                        <div class="input-group mb-3" style="float:left; width:350px">
                             <input id="msg" type="text" placeholder="메시지를 입력하세요." class="form-control" aria-describedby="basic-addon2">
                             <div class="input-group-append">
                                 <button class="btn btn-outline-secondary"> 전송 </button>
                             </div>
                         </div>
                     </form>
-                    <script>
-                    $("#msg_send").submit(function(event){
-                        event.preventDefault();
-                        socket.emit('messagedetection', {msg: $("#msg").val(), userId: "${userId}", roomId: "${room.id}"});
-                        $("#msg").val('');
-                    });
-                    socket.on('chat message', function(msg){
-                        $("#messages").append($('<li class="list-group-item">').text(msg));
-                    });
-                    </script>
-                </div>`;
+                    <form id="leave_chat" action="/">
+                        <button class="btn btn-outline-secondary"> 방 나가기 </button>
+                    </form>
+                </div>
+                <div id="userBox">
+                    <ul id="userList" class="list-group">`
+        for(var i = 0; i < room.users.length; i++){
+            html += `<li id="User_${room.users[i]}" class="list-group-item">${room.users[i]}</li>`;
+        }
+        html += `</ul>
+                </div>
+                <script>
+                $("#msg_send").submit(function(event){
+                    event.preventDefault();
+                    socket.emit('messagedetection', {msg: $("#msg").val(), userId: "${userId}", roomId: "${room.id}"});
+                    $("#msg").val('');
+                });
+                $("#leave_chat").submit(function(event){
+                    socket.emit('leave_chat', {roomId: "${room.id}", userId: "${userId}"});
+                });
+                socket.on('chat message', function(data){
+                    $("#messages").append('<li class="list-group-item">' + data.userId + ": "+ data.msg + '<div style="text-align:right; float:right;">' + data.sendTime + '</div></li>');
+                });
+                socket.on('leave_chatroom', function(data){
+                    if(data.roomId == ${room.id}){
+                        $("#User_" + data.userId).remove();
+                    }
+                });
+                socket.on('enter_chatroom', function(data){
+                    if(data.roomId == ${room.id}){
+                        $("#userList").append('<li id="User_' + data.userId + '" class="list-group-item">' + data.userId + '</li>');
+                    }
+                });
+                </script>`;
         return html;
     },
     login:function(login = false){
