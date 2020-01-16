@@ -86,7 +86,7 @@ app.post('/room_making_process', function(req, res){
         res.redirect('/');
     }
     else{
-        alert("로그인 후 이용해주세요!");
+        res.send(`<script type="text/javascript">alert("로그인 후 이용해주세요!");location.href='/';</script>`);
     }
 })
 
@@ -107,12 +107,11 @@ app.get('/chatroom', function(req, res){
             io.emit('enter_chatroom', {roomId: roomId, userId: userId});
         }
         var chat = template.chatBody(Room.instances[roomId], userId);
-        var html = template.HTML_Main(undefined, template.login(req.session.user), Room.instances[roomId].title + "채팅방", chat);
+        var html = template.HTML_Main(undefined, template.login(req.session.user), Room.instances[roomId].title + " 채팅방", chat);
         res.send(html);
     }
     else{
-        alert("로그인 후 이용해주세요!");
-        res.redirect('/');
+        res.send(`<script type="text/javascript">alert("로그인 후 이용해주세요!");location.href='/';</script>`);
     }
 })
 
@@ -139,13 +138,11 @@ app.post('/auth/login_process', function(req, res){
                 pw: userPassword,
                 authorized: true
             };
-            alert("반갑습니다! " + req.session.user.id + "님");
-            res.redirect('/');
+            res.send(`<script type="text/javascript">alert("반갑습니다! ` + req.session.user.id + `님");location.href='/';</script>`);
         }
         else{
             console.log("denied");
-            alert("로그인 실패");
-            res.redirect('/');
+            res.send(`<script type="text/javascript">alert("로그인 실패!");location.href='/';</script>`);
         }
     });
 });
@@ -168,8 +165,7 @@ app.post('/auth/register_process', function(req, res){
     registerId(userId, userPassword).then(function(){
         console.log("회원가입 완료");
     });
-    alert("회원가입 성공! 로그인 해주세요~");
-    res.redirect('/');
+    res.send(`<script type="text/javascript">alert("회원가입 성공! 로그인 해주세요~");location.href='/';</script>`);
 });
 
 server.listen(3000,()=>{

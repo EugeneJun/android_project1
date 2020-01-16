@@ -55,25 +55,27 @@ module.exports={
         for(var i = 0; i < room.messages.length; i++){
             html += `<li class="list-group-item">${room.messages[i].userId}: ${room.messages[i].message}<div style="text-align:right; float:right;">${room.messages[i].date}</div></li>`;
         }
-        html += `</ul>
+        html += `</ul></div>
+                <div id="userBox">
+                    <ul id="userList" class="list-group">`
+        for(var i = 0; i < room.users.length; i++){
+            html += `<li id="User_${room.users[i]}" class="list-group-item">${room.users[i]}</li>`;
+        }
+        html += `</ul></div>
+                <div id="chatInput">
                     <form id="msg_send">
-                        <div class="input-group mb-3" style="float:left; width:350px">
+                        <div id="chatInputBox" class="input-group mb-3">
                             <input id="msg" type="text" placeholder="메시지를 입력하세요." class="form-control" aria-describedby="basic-addon2">
                             <div class="input-group-append">
                                 <button class="btn btn-outline-secondary"> 전송 </button>
                             </div>
                         </div>
                     </form>
-                    <form id="leave_chat" action="/">
-                        <button class="btn btn-outline-secondary"> 방 나가기 </button>
-                    </form>
-                </div>
-                <div id="userBox">
-                    <ul id="userList" class="list-group">`
-        for(var i = 0; i < room.users.length; i++){
-            html += `<li id="User_${room.users[i]}" class="list-group-item">${room.users[i]}</li>`;
-        }
-        html += `</ul>
+                    <div id="chatLeaveButton">
+                        <form id="leave_chat" action="/">
+                            <button class="btn btn-outline-secondary"> 방 나가기 </button>
+                        </form>
+                    </div>
                 </div>
                 <script>
                 $("#msg_send").submit(function(event){
@@ -86,6 +88,7 @@ module.exports={
                 });
                 socket.on('chat message', function(data){
                     $("#messages").append('<li class="list-group-item">' + data.userId + ": "+ data.msg + '<div style="text-align:right; float:right;">' + data.sendTime + '</div></li>');
+                    $("#chat").scrollTop($("#chat")[0].scrollHeight);
                 });
                 socket.on('leave_chatroom', function(data){
                     if(data.roomId == ${room.id}){
