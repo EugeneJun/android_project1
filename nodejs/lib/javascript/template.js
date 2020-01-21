@@ -78,6 +78,10 @@ module.exports={
                     </div>
                 </div>
                 <script>
+                history.pushState(null, null, "#noback");
+                $(window).bind("hashchange", function(){
+                    history.pushState(null, null, "#noback");
+                });
                 $("#msg_send").submit(function(event){
                     event.preventDefault();
                     socket.emit('messagedetection', {msg: $("#msg").val(), userId: "${userId}", roomId: "${room.id}"});
@@ -91,7 +95,10 @@ module.exports={
                     $("#chat").scrollTop($("#chat")[0].scrollHeight);
                 });
                 socket.on('leave_chatroom', function(data){
-                    if(data.roomId == ${room.id}){
+                    if(data.roomId == -1){
+                        $("#User_" + data.userId).remove();
+                    }
+                    else if(data.roomId == ${room.id}){
                         $("#User_" + data.userId).remove();
                     }
                 });
