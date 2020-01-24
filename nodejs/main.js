@@ -68,11 +68,13 @@ app.get('/',function(req,res){
     if(req.session.user){
         io.emit('leave_chatroom', {userId: req.session.user.id, roomId: -1});
     }
-    for(var j = 0; j < Room.instances.length; j++){
-        for(var i = 0; i < Room.instances[j].users.length; i++){
-            if(Room.instances[j].users[i] == req.session.user.id){
-                Room.instances[j].users.splice(i, 1);
-                break;
+    if(req.session.user){
+        for(var j = 0; j < Room.instances.length; j++){
+            for(var i = 0; i < Room.instances[j].users.length; i++){
+                if(Room.instances[j].users[i] == req.session.user.id){
+                    Room.instances[j].users.splice(i, 1);
+                    break;
+                }
             }
         }
     }
